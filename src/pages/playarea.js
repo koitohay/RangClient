@@ -14,21 +14,7 @@ let connectionOptions = {
 const Results = () => (
     <img src={greenImg} style={{ width: "16px", height: "16px" }} />
 );
-let cards = [
-    { name: "diamonds", value: "Q", class: "suit diamonds" },
-    { name: "diamonds", value: "10", class: "suit diamonds" },
-    { name: "diamonds", value: "2", class: "suit diamonds" },
-    { name: "diamonds", value: "K", class: "suit diamonds" },
-    { name: "spades", value: "9", class: "suit spades" },
-    { name: "spades", value: "A", class: "suit spades" },
-    { name: "spades", value: "5", class: "suit spades" },
-    { name: "spades", value: "4", class: "suit spades" },
-    { name: "hearts", value: "J", class: "suit hearts" },
-    { name: "hearts", value: "3", class: "suit hearts" },
-    { name: "hearts", value: "Q", class: "suit hearts" },
-    { name: "hearts", value: "1", class: "suit hearts" },
-    { name: "clubs", value: "10", class: "suit clubs" }
-];
+
 let socket = null;
 class Playarea extends Component {
     constructor(props) {
@@ -45,7 +31,8 @@ class Playarea extends Component {
             myRole: '',
             noOfPlayers: 0,
             gameId: null,
-            socketId: null
+            socketId: null,
+            playerTurn: 0
         };
 
         this.showCard = this.showCard.bind(this);
@@ -98,6 +85,10 @@ class Playarea extends Component {
     }
 
     showCard(card, playerId, stopEmit) {
+
+        if (playerId != this.state.playerTurn)
+            return;
+
         switch (playerId) {
             case 1:
                 this.setState({ activeCard: card });
@@ -197,6 +188,7 @@ class Playarea extends Component {
 
     yourTurn(data) {
         console.log('Your turn called', data.playerId);
+        this.setState({ playerTurn: data.playerId })
         switch (data.playerId) {
             case 1:
                 this.setState({ hostTurn: true });
@@ -319,94 +311,94 @@ class Playarea extends Component {
                     <br />
 
                     <div class="row">
-                        <div className={"card text-white  mb-3 col-3 " + (!this.state.hostTurn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left'}}>
+                        <div className={"card text-white  mb-3 col-3 " + (!this.state.hostTurn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left' }}>
                             <div class="card-header">Host</div>
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                {this.state.gameId}
-                                {this.state.players.length >= 1 ? <Results /> : null}
-                            </h5>
-                            <p class="card-text">
-                                {this.state.hostText}
-                            </p>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {this.state.gameId}
+                                    {this.state.players.length >= 1 ? <Results /> : null}
+                                </h5>
+                                <p class="card-text">
+                                    {this.state.hostText}
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-3 mb-3">
-                        <div class="deck">
-                            <div class="card" >
-                                <div class="value">{this.state.activeCard != null ? this.mapToCardText(this.state.activeCard.value) : ''}
-                                </div>
-                                <div className={this.state.activeCard != null ? this.state.activeCard.class : ''}>
+                        <div class="col-3 mb-3">
+                            <div class="deck">
+                                <div class="card" >
+                                    <div class="value">{this.state.activeCard != null ? this.mapToCardText(this.state.activeCard.value) : ''}
+                                    </div>
+                                    <div className={this.state.activeCard != null ? this.state.activeCard.class : ''}>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-3 mb-3" >
-                        <div class="deck" style={{ 'float': 'right' }}>
-                            <div class="card" >
-                                <div class="value">{this.state.activeCardPlayer02 != null ? this.mapToCardText(this.state.activeCardPlayer02.value) : ''}
-                                </div>
-                                <div className={this.state.activeCardPlayer02 != null ? this.state.activeCardPlayer02.class : ''}>
+                        <div class="col-3 mb-3" >
+                            <div class="deck" style={{ 'float': 'right' }}>
+                                <div class="card" >
+                                    <div class="value">{this.state.activeCardPlayer02 != null ? this.mapToCardText(this.state.activeCardPlayer02.value) : ''}
+                                    </div>
+                                    <div className={this.state.activeCardPlayer02 != null ? this.state.activeCardPlayer02.class : ''}>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div className={"card text-white  mb-3 col-3 " + (!this.state.player02Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
-                        <div class="card-header">{this.state.players.length >= 2 ? this.state.players[1].playerName : ""}</div>
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                {this.state.players.length >= 2 ? <Results /> : null}
-                            </h5>
-                            <p class="card-text">player joining ...</p>
+                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player02Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
+                            <div class="card-header">{this.state.players.length >= 2 ? this.state.players[1].playerName : ""}</div>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {this.state.players.length >= 2 ? <Results /> : null}
+                                </h5>
+                                <p class="card-text">player joining ...</p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="row">
-                    <div className={"card text-white  mb-3 col-3 " + (!this.state.player03Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left' }}>
-                        <div class="card-header">{this.state.players.length >= 3 ? this.state.players[2].playerName : ""}</div>
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                {this.state.players.length >= 3 ? <Results /> : null}
-                            </h5>
-                            <p class="card-text">cards coming...</p>
+                    <div class="row">
+                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player03Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left' }}>
+                            <div class="card-header">{this.state.players.length >= 3 ? this.state.players[2].playerName : ""}</div>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {this.state.players.length >= 3 ? <Results /> : null}
+                                </h5>
+                                <p class="card-text">cards coming...</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-3 mb-3">
-                        <div class="deck">
-                            <div class="card" >
-                                <div class="value">{this.state.activeCardPlayer03 != null ? this.mapToCardText(this.state.activeCardPlayer03.value) : ''}
-                                </div>
-                                <div className={this.state.activeCardPlayer03 != null ? this.state.activeCardPlayer03.class : ''}>
+                        <div class="col-3 mb-3">
+                            <div class="deck">
+                                <div class="card" >
+                                    <div class="value">{this.state.activeCardPlayer03 != null ? this.mapToCardText(this.state.activeCardPlayer03.value) : ''}
+                                    </div>
+                                    <div className={this.state.activeCardPlayer03 != null ? this.state.activeCardPlayer03.class : ''}>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-3 mb-3" >
-                        <div class="deck" style={{ 'float': 'right' }}>
-                            <div class="card" >
-                                <div class="value">{this.state.activeCardPlayer04 != null ? this.mapToCardText(this.state.activeCardPlayer04.value) : ''}
-                                </div>
-                                <div className={this.state.activeCardPlayer04 != null ? this.state.activeCardPlayer04.class : ''}>
+                        <div class="col-3 mb-3" >
+                            <div class="deck" style={{ 'float': 'right' }}>
+                                <div class="card" >
+                                    <div class="value">{this.state.activeCardPlayer04 != null ? this.mapToCardText(this.state.activeCardPlayer04.value) : ''}
+                                    </div>
+                                    <div className={this.state.activeCardPlayer04 != null ? this.state.activeCardPlayer04.class : ''}>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div className={"card text-white  mb-3 col-3 " + (!this.state.player04Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
-                        <div class="card-header">{this.state.players.length >= 4 ? this.state.players[3].playerName : ""}</div>
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                {this.state.players.length >= 4 ? <Results /> : null}
-                            </h5>
-                            <p class="card-text">player joining...</p>
+                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player04Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
+                            <div class="card-header">{this.state.players.length >= 4 ? this.state.players[3].playerName : ""}</div>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {this.state.players.length >= 4 ? <Results /> : null}
+                                </h5>
+                                <p class="card-text">player joining...</p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="deck">
-                    {cardsItems}
-                </div>
-            </div >
+                    <div className="deck">
+                        {cardsItems}
+                    </div>
+                </div >
             </div >
         );
     }
