@@ -32,7 +32,8 @@ class Playarea extends Component {
             noOfPlayers: 0,
             gameId: null,
             socketId: null,
-            playerTurn: 0
+            playerTurn: 0,
+            message: ''
         };
 
         this.showCard = this.showCard.bind(this);
@@ -48,6 +49,7 @@ class Playarea extends Component {
         this.updatePlayerId = this.updatePlayerId.bind(this);
         this.updateOtherPlayerCard = this.updateOtherPlayerCard.bind(this);
         this.yourTurn = this.yourTurn.bind(this);
+        this.whoWonRound = this.whoWonRound.bind(this);
 
         this.JoinRoom = this.JoinRoom.bind(this);
         this.handleChange = this.handleChange.bind(this);
@@ -71,6 +73,7 @@ class Playarea extends Component {
         socket.on('cardDealForPlayers', this.cardDealForPlayers);
         socket.on('updatePlayerId', this.updatePlayerId);
         socket.on('updateOtherPlayerCard', this.updateOtherPlayerCard);
+        socket.on('whoWonRound', this.whoWonRound);
 
         //room full start game
         socket.on('roomfull', this.roomfull);
@@ -89,6 +92,13 @@ class Playarea extends Component {
         if (playerId != this.state.playerTurn)
             return;
 
+        var arrayOfCards = [...this.state.Cards];
+        var indexOfCard = arrayOfCards.indexOf(card);
+        if (indexOfCard !== -1) {
+            arrayOfCards.splice(indexOfCard, 1);
+            this.setState({ Cards: arrayOfCards });
+        }
+        
         switch (playerId) {
             case 1:
                 this.setState({ activeCard: card });
@@ -247,6 +257,15 @@ class Playarea extends Component {
         //this.setState({turn: true});
     }
 
+    whoWonRound(data) {
+
+        this.setState({
+            message: "Player " + data.playerData.playerId + " won the round!",
+            activeCard: null, activeCardPlayer02: null, activeCardPlayer03: null, activeCardPlayer04: null
+        });
+        this.yourTurn(data.playerData);
+    }
+
     render() {
         const cardsItems = this.state.Cards.map((card) =>
             <div class="card" onClick={() => this.showCard(card, this.state.playerId)}>
@@ -301,7 +320,9 @@ class Playarea extends Component {
                             </div>
                         </div>
                     </nav>
-
+                    <div class="alert alert-success" style={{ display: this.state.message !== '' ? 'block' : 'none' }} role="alert">
+                        {this.state.message}
+                    </div>
                     <div className='count'>
                         <button type="button" class=" mb-3 btn btn-success">
                             Players online: <span class="badge badge-light"> {this.state.players.length}</span>
