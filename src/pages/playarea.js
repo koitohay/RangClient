@@ -98,7 +98,7 @@ class Playarea extends Component {
             arrayOfCards.splice(indexOfCard, 1);
             this.setState({ Cards: arrayOfCards });
         }
-        
+
         switch (playerId) {
             case 1:
                 this.setState({ activeCard: card });
@@ -143,9 +143,7 @@ class Playarea extends Component {
     }
 
     roomfull() {
-        // if (this.state.myRole === 'Host') {
         socket.emit("hostRoomFull", { gameId: this.state.gameId.toString() });
-        //}
     }
 
     onRoomCreated(data) {
