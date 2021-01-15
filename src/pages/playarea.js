@@ -1,10 +1,11 @@
-import React, { Component, useContext, useEffect } from 'react';
+import React, { Component } from 'react';
+import { Modal, Button } from 'react-bootstrap'
 import greenImg from '../icons/iconfinder_Circle_Green_34211.png';
 import '../styles.css';
 import { auth } from "../services/firebase";
 import socketIOClient from "socket.io-client";
 
-const ENDPOINT = "https://shielded-dusk-88522.herokuapp.com/";
+const ENDPOINT = "http://localhost:4100";
 let connectionOptions = {
     "force new connection": true,
     "reconnectionAttempts": "Infinity", //avoid having user reconnect manually in order to prevent dead clients after a server restart
@@ -33,9 +34,12 @@ class Playarea extends Component {
             gameId: null,
             socketId: null,
             playerTurn: 0,
-            message: ''
+            message: '',
+            playerWonMessage: '',
+            showModal: false
         };
 
+        this.baseState = this.state;
         this.showCard = this.showCard.bind(this);
         this.CreateRoom = this.CreateRoom.bind(this);
 
@@ -50,7 +54,7 @@ class Playarea extends Component {
         this.updateOtherPlayerCard = this.updateOtherPlayerCard.bind(this);
         this.yourTurn = this.yourTurn.bind(this);
         this.whoWonRound = this.whoWonRound.bind(this);
-
+        this.endGame = this.endGame.bind(this);
         this.JoinRoom = this.JoinRoom.bind(this);
         this.handleChange = this.handleChange.bind(this);
     }
@@ -77,6 +81,8 @@ class Playarea extends Component {
 
         //room full start game
         socket.on('roomfull', this.roomfull);
+
+        socket.on('endGame', this.endGame);
 
         // Error event
         socket.on('error', (e) => {
@@ -196,7 +202,15 @@ class Playarea extends Component {
 
     yourTurn(data) {
         console.log('Your turn called', data.playerId);
-        this.setState({ playerTurn: data.playerId })
+
+        if (data.clearCards)
+            this.setState({
+                playerTurn: data.playerId,
+                activeCard: null, activeCardPlayer02: null, activeCardPlayer03: null, activeCardPlayer04: null
+            });
+        else
+            this.setState({ playerTurn: data.playerId })
+
         switch (data.playerId) {
             case 1:
                 this.setState({ hostTurn: true });
@@ -258,10 +272,25 @@ class Playarea extends Component {
     whoWonRound(data) {
 
         this.setState({
-            message: "Player " + data.playerData.playerId + " won the round!",
+            message: "Player " + data.winner.playerData.playerId + " won the round!",
             activeCard: null, activeCardPlayer02: null, activeCardPlayer03: null, activeCardPlayer04: null
         });
-        this.yourTurn(data.playerData);
+
+        var thisComponent = this;
+        setTimeout(function () {
+            thisComponent.setState({ message: '' });
+        }, 10000);
+
+        this.yourTurn(data);
+    }
+
+    endGame(data) {
+        console.log(data.gameWinner);
+        this.setState({
+            playerWonMessage: "Player " + data.gameWinner.playerName + " won the game with " + data.gameWinner.roundsWon + "!",
+            showModal: true,
+            activeCard: null, activeCardPlayer02: null, activeCardPlayer03: null, activeCardPlayer04: null
+        });
     }
 
     render() {
@@ -374,35 +403,7 @@ class Playarea extends Component {
                     </div>
 
                     <div class="row">
-                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player03Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left' }}>
-                            <div class="card-header">{this.state.players.length >= 3 ? this.state.players[2].playerName : ""}</div>
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    {this.state.players.length >= 3 ? <Results /> : null}
-                                </h5>
-                                <p class="card-text">cards coming...</p>
-                            </div>
-                        </div>
-                        <div class="col-3 mb-3">
-                            <div class="deck">
-                                <div class="card" >
-                                    <div class="value">{this.state.activeCardPlayer03 != null ? this.mapToCardText(this.state.activeCardPlayer03.value) : ''}
-                                    </div>
-                                    <div className={this.state.activeCardPlayer03 != null ? this.state.activeCardPlayer03.class : ''}>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-3 mb-3" >
-                            <div class="deck" style={{ 'float': 'right' }}>
-                                <div class="card" >
-                                    <div class="value">{this.state.activeCardPlayer04 != null ? this.mapToCardText(this.state.activeCardPlayer04.value) : ''}
-                                    </div>
-                                    <div className={this.state.activeCardPlayer04 != null ? this.state.activeCardPlayer04.class : ''}>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
                         <div className={"card text-white  mb-3 col-3 " + (!this.state.player04Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
                             <div class="card-header">{this.state.players.length >= 4 ? this.state.players[3].playerName : ""}</div>
                             <div class="card-body">
@@ -412,12 +413,56 @@ class Playarea extends Component {
                                 <p class="card-text">player joining...</p>
                             </div>
                         </div>
+                        <div class="col-3 mb-3" >
+                            <div class="deck" style={{ 'float': 'left' }}>
+                                <div class="card" >
+                                    <div class="value">{this.state.activeCardPlayer04 != null ? this.mapToCardText(this.state.activeCardPlayer04.value) : ''}
+                                    </div>
+                                    <div className={this.state.activeCardPlayer04 != null ? this.state.activeCardPlayer04.class : ''}>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-3 mb-3">
+                            <div class="deck" style={{ 'float': 'right' }}>
+                                <div class="card" >
+                                    <div class="value">{this.state.activeCardPlayer03 != null ? this.mapToCardText(this.state.activeCardPlayer03.value) : ''}
+                                    </div>
+                                    <div className={this.state.activeCardPlayer03 != null ? this.state.activeCardPlayer03.class : ''}>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player03Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left' }}>
+                            <div class="card-header">{this.state.players.length >= 3 ? this.state.players[2].playerName : ""}</div>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {this.state.players.length >= 3 ? <Results /> : null}
+                                </h5>
+                                <p class="card-text">cards coming...</p>
+                            </div>
+                        </div>
+
                     </div>
 
                     <div className="deck">
                         {cardsItems}
                     </div>
                 </div >
+                <Modal show={this.state.showModal}
+                    onHide={() => this.setState({ showModal: false })}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Game ended!!</Modal.Title>
+                    </Modal.Header>
+
+                    <Modal.Body>
+                        <p>{this.state.playerWonMessage}</p>
+                    </Modal.Body>
+
+                    <Modal.Footer>
+                        <Button variant="secondary">Close</Button>
+                    </Modal.Footer>
+                </Modal>
             </div >
         );
     }
