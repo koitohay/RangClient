@@ -5,7 +5,7 @@ import '../styles.css';
 import { auth } from "../services/firebase";
 import socketIOClient from "socket.io-client";
 
-const ENDPOINT = "http://localhost:4100";
+const ENDPOINT = "https://salty-savannah-59865.herokuapp.com/";
 let connectionOptions = {
     "force new connection": true,
     "reconnectionAttempts": "Infinity", //avoid having user reconnect manually in order to prevent dead clients after a server restart
