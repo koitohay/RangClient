@@ -5,7 +5,7 @@ import '../styles.css';
 import { auth } from "../services/firebase";
 import socketIOClient from "socket.io-client";
 
-const ENDPOINT = "https://salty-savannah-59865.herokuapp.com/";
+const ENDPOINT = "http://localhost:4100";
 let connectionOptions = {
     "force new connection": true,
     "reconnectionAttempts": "Infinity", //avoid having user reconnect manually in order to prevent dead clients after a server restart
@@ -57,6 +57,8 @@ class Playarea extends Component {
         this.endGame = this.endGame.bind(this);
         this.JoinRoom = this.JoinRoom.bind(this);
         this.handleChange = this.handleChange.bind(this);
+        this.handleChangeName = this.handleChangeName.bind(this);
+
     }
 
     componentDidMount() {
@@ -126,16 +128,22 @@ class Playarea extends Component {
             socket.emit('playedCard', { playerId: this.state.playerId, socketId: this.state.socketId, roomId: this.state.gameId.toString(), card: card });
     }
 
+    handleChangeName(event) {
+        this.setState({
+            playerName: event.target.value
+        });
+    }
+
     handleChange(event) {
         this.setState({
-            roomCode: event.target.value
+            gameId: event.target.value
         });
     }
 
     JoinRoom() {
         var data = {
-            gameId: this.state.roomCode,
-            playerName: 'Kaleem' || 'anon'
+            gameId: this.state.gameId,
+            playerName: this.state.playerName || 'anon'
         };
         this.setState({ playerId: this.state.players.length + 1 });
         socket.emit("playerJoinGame", data);
@@ -183,7 +191,6 @@ class Playarea extends Component {
 
     beginNewGame(data) {
         console.log('Begin new game', this.state.myRole);
-
         socket.emit('dealCardsToPlayers', { roomId: data.gameId });
     }
 
@@ -265,8 +272,6 @@ class Playarea extends Component {
                 return value;
                 break;
         }
-        console.log('Youe turn called');
-        //this.setState({turn: true});
     }
 
     whoWonRound(data) {
@@ -287,7 +292,7 @@ class Playarea extends Component {
     endGame(data) {
         console.log(data.gameWinner);
         this.setState({
-            playerWonMessage: "Player " + data.gameWinner.playerName + " won the game with " + data.gameWinner.roundsWon + "!",
+            playerWonMessage: "Team with players " + data.gameWinner.playerNames + " won the game by winning " + data.gameWinner.roundsWon + " rounds!",
             showModal: true,
             activeCard: null, activeCardPlayer02: null, activeCardPlayer03: null, activeCardPlayer04: null
         });
@@ -302,31 +307,27 @@ class Playarea extends Component {
                 </div>
             </div>
         );
+
         return (
             <div>
                 <div id="Lobby" style={{ display: !this.state.showPlayArea ? 'block' : 'none' }}>
-                    <div className="form-group col-3">
-                        <div>
-                            <h1>
-                                {this.state.code}
-                            </h1>
-                            <div class="row">
-                                <button className="btn btn-primary px-5" onClick={this.CreateRoom}>
-                                    Create Room
-                    </button>
-                            </div>
-                            <div class="row">
-                                <div class="col-12" style={{ 'height': 20 }}></div>
-                            </div>
+                    <div class="container h-100">
+                        <div class="row h-100 justify-content-center align-items-center">
+                            <div class="col-10 col-md-8 col-lg-6">
+                                <div className="form-group">
 
-                            <div class="row">
+                                    <button className="btn btn-primary form-control" onClick={this.CreateRoom}>
+                                        Create Room
+                                </button>
+                                    <br></br>
+                        Name: <input type="text" id="nameOfPlayer" className="form-control" name="nameOfPlayer" onChange={this.handleChangeName} value={this.state.playerName}></input>
+                        Room Id: <input type="text" id="roomNumber" className="form-control" name="roomNumber" onChange={this.handleChange} value={this.state.gameId}></input>
+                                    <button className="btn btn-primary form-control" onClick={this.JoinRoom}>
+                                        Join Room
+                                 </button>
 
-                                <input type="text" id="roomNumber" className="form-control" name="roomNumber" onChange={this.handleChange} value={this.state.roomCode}></input>
-                                <button className="btn btn-primary px-5" onClick={this.JoinRoom}>
-                                    Join Room
-                    </button>
+                                </div>
                             </div>
-
                         </div>
                     </div>
 
@@ -340,10 +341,7 @@ class Playarea extends Component {
                         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                             <div class="navbar-nav">
                                 <a class="nav-item nav-link active" href="#">Rang card game <span class="sr-only">(current)</span></a>
-                                <a class="nav-item nav-link" href="#">Distribute</a>
-                                <a class="nav-item nav-link" href="#">declare winner</a>
                                 <a class="nav-item nav-link" href="#">Endgame</a>
-                                <a class="nav-item nav-link" href="#">Choose 1 player</a>
                             </div>
                         </div>
                     </nav>
@@ -391,7 +389,7 @@ class Playarea extends Component {
                                 </div>
                             </div>
                         </div>
-                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player02Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
+                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player02Turn ? 'bg-success' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
                             <div class="card-header">{this.state.players.length >= 2 ? this.state.players[1].playerName : ""}</div>
                             <div class="card-body">
                                 <h5 class="card-title">
@@ -404,7 +402,7 @@ class Playarea extends Component {
 
                     <div class="row">
 
-                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player04Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
+                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player04Turn ? 'bg-success' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
                             <div class="card-header">{this.state.players.length >= 4 ? this.state.players[3].playerName : ""}</div>
                             <div class="card-body">
                                 <h5 class="card-title">
