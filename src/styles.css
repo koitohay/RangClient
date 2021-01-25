@@ -74,3 +74,9 @@ vertical-align:middle;
 	background-position-x:90px;
 	background-position-y:100px;
 }
+
+.cardSmall::before{content:attr(data-rank)}
+.spadesSmall::after{content:"\2660"; font-size: 30px;}
+.heartsSmall::after{content:"\2665";color:red; font-size: 30px;}
+.diamondsSmall::after{content:"\2666";color:red; font-size: 30px;}
+.clubsSmall::after{content:"\2663"; font-size: 30px;}

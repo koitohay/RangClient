@@ -16,6 +16,9 @@ const Results = () => (
     <img src={greenImg} style={{ width: "16px", height: "16px" }} />
 );
 
+const refreshPage = () => {
+    window.location.reload();
+}
 let socket = null;
 class Playarea extends Component {
     constructor(props) {
@@ -32,11 +35,16 @@ class Playarea extends Component {
             myRole: '',
             noOfPlayers: 0,
             gameId: null,
+            playerName: null,
             socketId: null,
             playerTurn: 0,
             message: '',
             playerWonMessage: '',
-            showModal: false
+            showModal: false,
+            rangSelectionCards: [],
+            rangOfGame: '',
+            gameMessage: '',
+            closeModal: null
         };
 
         this.baseState = this.state;
@@ -58,10 +66,15 @@ class Playarea extends Component {
         this.JoinRoom = this.JoinRoom.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.handleChangeName = this.handleChangeName.bind(this);
-
+        this.selectRangForGame = this.selectRangForGame.bind(this);
+        this.rangSelected = this.rangSelected.bind(this);
+        this.showModalClose = this.showModalClose.bind(this);
+        this.endGameButtonClicked = this.endGameButtonClicked.bind(this);
+        this.gameEnded = this.gameEnded.bind(this);
     }
 
     componentDidMount() {
+        var that = this;
         console.log('componetnmount called  ');
         socket = socketIOClient(ENDPOINT, connectionOptions);
 
@@ -80,14 +93,22 @@ class Playarea extends Component {
         socket.on('updatePlayerId', this.updatePlayerId);
         socket.on('updateOtherPlayerCard', this.updateOtherPlayerCard);
         socket.on('whoWonRound', this.whoWonRound);
+        socket.on('selectRangForGame', this.selectRangForGame);
+        socket.on('rangSelected', this.rangSelected);
 
         //room full start game
         socket.on('roomfull', this.roomfull);
 
         socket.on('endGame', this.endGame);
+        socket.on('gameEnded', this.gameEnded);
 
         // Error event
         socket.on('error', (e) => {
+            that.setState({
+                modalTitle: "Error",
+                playerWonMessage: e.message,
+                showModal:true
+            });
             console.error(e);
         });
     }
@@ -141,12 +162,14 @@ class Playarea extends Component {
     }
 
     JoinRoom() {
-        var data = {
-            gameId: this.state.gameId,
-            playerName: this.state.playerName || 'anon'
-        };
-        this.setState({ playerId: this.state.players.length + 1 });
-        socket.emit("playerJoinGame", data);
+        if (this.state.playerName != null && this.state.gameId != null) {
+            var data = {
+                gameId: this.state.gameId,
+                playerName: this.state.playerName || 'anon'
+            };
+            this.setState({ playerId: this.state.players.length + 1 });
+            socket.emit("playerJoinGame", data);
+        }
     }
 
     CreateRoom() {
@@ -175,7 +198,6 @@ class Playarea extends Component {
     }
 
     onPlayerJoined(data) {
-        // if (this.state.myRole !== 'Host') {
         console.log('Room joined');
         this.setState({
             myRole: 'Player',
@@ -185,13 +207,36 @@ class Playarea extends Component {
             showPlayArea: true,
             players: data.players
         });
-        // }
-
     }
 
     beginNewGame(data) {
         console.log('Begin new game', this.state.myRole);
-        socket.emit('dealCardsToPlayers', { roomId: data.gameId });
+        socket.emit('getCardForRangSelection', { roomId: data.gameId });
+    }
+
+    sendSelectionOfRang(card) {
+        this.setState({
+            modalTitle: "",
+            playerWonMessage: "",
+            showModal: false,
+            rangSelectionCards: []
+        })
+        socket.emit('dealCardsToPlayers', { roomId: this.state.gameId, selectedCards: this.state.rangSelectionCards, selectedRang: card });
+    }
+
+    selectRangForGame(data) {
+        console.log("Select the rang called");
+        this.setState({
+            modalTitle: "Select rang!",
+            gameMessage: "Player 1 selecting rang for the game!",
+            playerWonMessage: "Please select rang from the following cards.",
+            showModal: true,
+            rangSelectionCards: data.cards
+        });
+    }
+
+    rangSelected(data) {
+        this.setState({ rangOfGame: data.rang, gameMessage: "Game started!" })
     }
 
     cardDealForPlayers(data) {
@@ -213,6 +258,7 @@ class Playarea extends Component {
         if (data.clearCards)
             this.setState({
                 playerTurn: data.playerId,
+                gameMessage: "",
                 activeCard: null, activeCardPlayer02: null, activeCardPlayer03: null, activeCardPlayer04: null
             });
         else
@@ -220,32 +266,32 @@ class Playarea extends Component {
 
         switch (data.playerId) {
             case 1:
-                this.setState({ hostTurn: true });
+                this.setState({ hostTurn: true, gameMessage: "Player " + data.playerId + " turn!" });
                 this.setState({ player02Turn: false })
                 this.setState({ player03Turn: false })
                 this.setState({ player04Turn: false })
                 break;
             case 2:
                 this.setState({ hostTurn: false });
-                this.setState({ player02Turn: true })
+                this.setState({ player02Turn: true, gameMessage: "Player " + data.playerId + " turn!" })
                 this.setState({ player03Turn: false })
                 this.setState({ player04Turn: false })
                 break;
             case 3:
                 this.setState({ hostTurn: false });
-                this.setState({ player02Turn: false })
+                this.setState({ player02Turn: false, gameMessage: "Player " + data.playerId + " turn!" })
                 this.setState({ player03Turn: true })
                 this.setState({ player04Turn: false })
                 break;
             case 4:
                 this.setState({ hostTurn: false });
-                this.setState({ player02Turn: false })
+                this.setState({ player02Turn: false, gameMessage: "Player " + data.playerId + " turn!" })
                 this.setState({ player03Turn: false })
                 this.setState({ player04Turn: true })
                 break;
             default:
                 this.setState({ hostTurn: true });
-                this.setState({ player02Turn: false })
+                this.setState({ player02Turn: false, gameMessage: "Player " + data.playerId + " turn!" })
                 this.setState({ player03Turn: false })
                 this.setState({ player04Turn: false })
                 break;
@@ -292,9 +338,35 @@ class Playarea extends Component {
     endGame(data) {
         console.log(data.gameWinner);
         this.setState({
+            modalTitle: "Game ended!",
             playerWonMessage: "Team with players " + data.gameWinner.playerNames + " won the game by winning " + data.gameWinner.roundsWon + " rounds!",
             showModal: true,
+            closeModal: refreshPage,
             activeCard: null, activeCardPlayer02: null, activeCardPlayer03: null, activeCardPlayer04: null
+        });
+    }
+
+    gameEnded(data){
+        this.setState({
+            modalTitle: "Game ended!",
+            playerWonMessage: "One or more players left the room, you need to restart game.",
+            showModal: true,
+            closeModal: refreshPage,
+        });
+    }
+
+    endGameButtonClicked(e) {
+        socket.emit("gameEnded", {gameId: this.state.gameId, socketId: this.state.socketId, playerId: this.state.playerId });
+        refreshPage();
+    }
+
+    showModalClose() {
+        if (this.state.closeModal)
+            this.state.closeModal();
+
+        this.setState({
+            showModal: false,
+            closeModal: null
         });
     }
 
@@ -308,6 +380,14 @@ class Playarea extends Component {
             </div>
         );
 
+        const rangSelectionCards = this.state.rangSelectionCards.map((card) =>
+            <div class="card" onClick={() => this.sendSelectionOfRang(card)}>
+                <div class="value">{this.mapToCardText(card.value)}
+                </div>
+                <div className={card.class}>
+                </div>
+            </div>
+        );
         return (
             <div>
                 <div id="Lobby" style={{ display: !this.state.showPlayArea ? 'block' : 'none' }}>
@@ -341,18 +421,28 @@ class Playarea extends Component {
                         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                             <div class="navbar-nav">
                                 <a class="nav-item nav-link active" href="#">Rang card game <span class="sr-only">(current)</span></a>
-                                <a class="nav-item nav-link" href="#">Endgame</a>
+                                <a class="nav-item nav-link" href="#" onClick={this.endGameButtonClicked}>Endgame</a>
                             </div>
                         </div>
                     </nav>
                     <div class="alert alert-success" style={{ display: this.state.message !== '' ? 'block' : 'none' }} role="alert">
                         {this.state.message}
                     </div>
-                    <div className='count'>
+                    <div className='row'>
                         <button type="button" class=" mb-3 btn btn-success">
                             Players online: <span class="badge badge-light"> {this.state.players.length}</span>
                         </button>
+                        <div class="col-3" style={{ 'float': 'right', display: this.state.rangOfGame !== '' ? 'block' : 'none' }}>
+                            <div class={"cardSmall " + (this.state.rangOfGame) + "Small"}></div>
+                        </div>
+                        <div class="col-3" style={{ 'float': 'right', display: this.state.rangOfGame == '' ? 'block' : 'none' }}>
+                            Rang is not selected yet!
+                        </div>
+                        <div class="col-3" style={{ 'float': 'right', display: this.state.gameMessage !== "" ? 'block' : 'none' }}>
+                            {this.state.gameMessage}
+                        </div>
                     </div>
+
 
                     <br />
 
@@ -450,15 +540,18 @@ class Playarea extends Component {
                 <Modal show={this.state.showModal}
                     onHide={() => this.setState({ showModal: false })}>
                     <Modal.Header closeButton>
-                        <Modal.Title>Game ended!!</Modal.Title>
+                        <Modal.Title>{this.state.modalTitle}</Modal.Title>
                     </Modal.Header>
 
                     <Modal.Body>
                         <p>{this.state.playerWonMessage}</p>
+                        <div className="deck">
+                            {rangSelectionCards}
+                        </div>
                     </Modal.Body>
 
                     <Modal.Footer>
-                        <Button variant="secondary">Close</Button>
+                        <Button variant="secondary" onClick={this.showModalClose}>Close</Button>
                     </Modal.Footer>
                 </Modal>
             </div >
