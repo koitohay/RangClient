@@ -8,7 +8,8 @@ import configData from "../config.json";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
-const ENDPOINT = process.env.NODE_ENV === "development" ? configData.DEV_SERVER_URL : configData.PROD_SERVER_URL;
+// const ENDPOINT = process.env.NODE_ENV === "development" ? configData.DEV_SERVER_URL : configData.PROD_SERVER_URL;
+const ENDPOINT = configData.PROD_SERVER_URL;
 let connectionOptions = {
     "force new connection": true,
     "reconnectionAttempts": "Infinity", //avoid having user reconnect manually in order to prevent dead clients after a server restart
