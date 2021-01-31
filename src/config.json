@@ -1,0 +1,4 @@
+{
+    "PROD_SERVER_URL": "https://salty-savannah-59865.herokuapp.com/",
+    "DEV_SERVER_URL": "http://127.0.0.1:4100"
+  }

@@ -1,5 +1,4 @@
 import firebase from 'firebase';
-import { Gathering } from "../helpers/gatherings";
 
 const config = {
     apiKey: "AIzaSyAn0LlQHl-1GB2VzOTU-8MJgpgdlRA6A38",

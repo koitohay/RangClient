@@ -1,3 +1,7 @@
+.play-area, .home {
+    margin-top: 60px;
+}
+
 .Player {
 width: 250px;
 height: 100px;

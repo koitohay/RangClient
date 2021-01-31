@@ -4,14 +4,18 @@ import greenImg from '../icons/iconfinder_Circle_Green_34211.png';
 import '../styles.css';
 import { auth } from "../services/firebase";
 import socketIOClient from "socket.io-client";
+import configData from "../config.json";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
-const ENDPOINT = "https://salty-savannah-59865.herokuapp.com/";
+const ENDPOINT = process.env.NODE_ENV === "development" ? configData.DEV_SERVER_URL : configData.PROD_SERVER_URL;
 let connectionOptions = {
     "force new connection": true,
     "reconnectionAttempts": "Infinity", //avoid having user reconnect manually in order to prevent dead clients after a server restart
     "timeout": 10000,                  //before connect_error and connect_timeout are emitted.
     "transports": ["websocket"]
 };
+
 const Results = () => (
     <img src={greenImg} style={{ width: "16px", height: "16px" }} />
 );
@@ -19,6 +23,7 @@ const Results = () => (
 const refreshPage = () => {
     window.location.reload();
 }
+
 let socket = null;
 class Playarea extends Component {
     constructor(props) {
@@ -75,7 +80,7 @@ class Playarea extends Component {
 
     componentDidMount() {
         var that = this;
-        console.log('componetnmount called  ');
+
         socket = socketIOClient(ENDPOINT, connectionOptions);
 
         // room created
@@ -107,7 +112,7 @@ class Playarea extends Component {
             that.setState({
                 modalTitle: "Error",
                 playerWonMessage: e.message,
-                showModal:true
+                showModal: true
             });
             console.error(e);
         });
@@ -118,7 +123,7 @@ class Playarea extends Component {
 
     showCard(card, playerId, stopEmit) {
 
-        if (playerId != this.state.playerTurn)
+        if (playerId !== this.state.playerTurn)
             return;
 
         var arrayOfCards = [...this.state.Cards];
@@ -266,34 +271,39 @@ class Playarea extends Component {
 
         switch (data.playerId) {
             case 1:
-                this.setState({ hostTurn: true, gameMessage: "Player " + data.playerId + " turn!" });
-                this.setState({ player02Turn: false })
-                this.setState({ player03Turn: false })
-                this.setState({ player04Turn: false })
+                this.setState({
+                    hostTurn: true,
+                    gameMessage: "Player " + data.playerId + " turn!",
+                    player02Turn: false, player03Turn: false, player04Turn: false
+                });
                 break;
             case 2:
-                this.setState({ hostTurn: false });
-                this.setState({ player02Turn: true, gameMessage: "Player " + data.playerId + " turn!" })
-                this.setState({ player03Turn: false })
-                this.setState({ player04Turn: false })
+                this.setState({
+                    hostTurn: false,
+                    gameMessage: "Player " + data.playerId + " turn!",
+                    player02Turn: true, player03Turn: false, player04Turn: false
+                });
                 break;
             case 3:
-                this.setState({ hostTurn: false });
-                this.setState({ player02Turn: false, gameMessage: "Player " + data.playerId + " turn!" })
-                this.setState({ player03Turn: true })
-                this.setState({ player04Turn: false })
+                this.setState({
+                    hostTurn: false,
+                    gameMessage: "Player " + data.playerId + " turn!",
+                    player02Turn: false, player03Turn: true, player04Turn: false
+                });
                 break;
             case 4:
-                this.setState({ hostTurn: false });
-                this.setState({ player02Turn: false, gameMessage: "Player " + data.playerId + " turn!" })
-                this.setState({ player03Turn: false })
-                this.setState({ player04Turn: true })
+                this.setState({
+                    hostTurn: false,
+                    gameMessage: "Player " + data.playerId + " turn!",
+                    player02Turn: false, player03Turn: false, player04Turn: true
+                });
                 break;
             default:
-                this.setState({ hostTurn: true });
-                this.setState({ player02Turn: false, gameMessage: "Player " + data.playerId + " turn!" })
-                this.setState({ player03Turn: false })
-                this.setState({ player04Turn: false })
+                this.setState({
+                    hostTurn: true,
+                    gameMessage: "Player " + data.playerId + " turn!",
+                    player02Turn: false, player03Turn: false, player04Turn: false
+                });
                 break;
         }
     }
@@ -304,19 +314,14 @@ class Playarea extends Component {
         switch (value) {
             case 11:
                 return 'J'
-                break;
             case 12:
                 return 'Q'
-                break;
             case 13:
                 return 'K'
-                break;
             case 14:
                 return 'A'
-                break;
             default:
                 return value;
-                break;
         }
     }
 
@@ -346,7 +351,7 @@ class Playarea extends Component {
         });
     }
 
-    gameEnded(data){
+    gameEnded(data) {
         this.setState({
             modalTitle: "Game ended!",
             playerWonMessage: "One or more players left the room, you need to restart game.",
@@ -356,7 +361,7 @@ class Playarea extends Component {
     }
 
     endGameButtonClicked(e) {
-        socket.emit("gameEnded", {gameId: this.state.gameId, socketId: this.state.socketId, playerId: this.state.playerId });
+        socket.emit("gameEnded", { gameId: this.state.gameId, socketId: this.state.socketId, playerId: this.state.playerId });
         refreshPage();
     }
 
@@ -390,171 +395,165 @@ class Playarea extends Component {
         );
         return (
             <div>
-                <div id="Lobby" style={{ display: !this.state.showPlayArea ? 'block' : 'none' }}>
-                    <div class="container h-100">
-                        <div class="row h-100 justify-content-center align-items-center">
-                            <div class="col-10 col-md-8 col-lg-6">
-                                <div className="form-group">
+                <Header onEndGame={this.endGameButtonClicked} />
+                <div>
+                    <div id="Lobby" style={{ display: !this.state.showPlayArea ? 'block' : 'none' }}>
+                        <div class="container h-100 play-area">
+                            <div class="row h-100 justify-content-center align-items-center">
+                                <div class="col-10 col-md-8 col-lg-6">
+                                    <div className="form-group">
 
-                                    <button className="btn btn-primary form-control" onClick={this.CreateRoom}>
-                                        Create Room
+                                        <button className="btn btn-primary form-control" onClick={this.CreateRoom}>
+                                            Create Room
                                 </button>
-                                    <br></br>
+                                        <br></br>
                         Name: <input type="text" id="nameOfPlayer" className="form-control" name="nameOfPlayer" onChange={this.handleChangeName} value={this.state.playerName}></input>
                         Room Id: <input type="text" id="roomNumber" className="form-control" name="roomNumber" onChange={this.handleChange} value={this.state.gameId}></input>
-                                    <button className="btn btn-primary form-control" onClick={this.JoinRoom}>
-                                        Join Room
+                                        <button className="btn btn-primary form-control" onClick={this.JoinRoom}>
+                                            Join Room
                                  </button>
 
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                <div id="PlayArea" style={{ display: this.state.showPlayArea ? 'block' : 'none' }}>
-                    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-
-                        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-                            <div class="navbar-nav">
-                                <a class="nav-item nav-link active" href="#">Rang card game <span class="sr-only">(current)</span></a>
-                                <a class="nav-item nav-link" href="#" onClick={this.endGameButtonClicked}>Endgame</a>
-                            </div>
-                        </div>
-                    </nav>
-                    <div class="alert alert-success" style={{ display: this.state.message !== '' ? 'block' : 'none' }} role="alert">
-                        {this.state.message}
-                    </div>
-                    <div className='row'>
-                        <button type="button" class=" mb-3 btn btn-success">
-                            Players online: <span class="badge badge-light"> {this.state.players.length}</span>
-                        </button>
-                        <div class="col-3" style={{ 'float': 'right', display: this.state.rangOfGame !== '' ? 'block' : 'none' }}>
-                            <div class={"cardSmall " + (this.state.rangOfGame) + "Small"}></div>
-                        </div>
-                        <div class="col-3" style={{ 'float': 'right', display: this.state.rangOfGame == '' ? 'block' : 'none' }}>
-                            Rang is not selected yet!
-                        </div>
-                        <div class="col-3" style={{ 'float': 'right', display: this.state.gameMessage !== "" ? 'block' : 'none' }}>
-                            {this.state.gameMessage}
-                        </div>
-                    </div>
-
-
-                    <br />
-
-                    <div class="row">
-                        <div className={"card text-white  mb-3 col-3 " + (!this.state.hostTurn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left' }}>
-                            <div class="card-header">Host</div>
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    {this.state.gameId}
-                                    {this.state.players.length >= 1 ? <Results /> : null}
-                                </h5>
-                                <p class="card-text">
-                                    {this.state.hostText}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="col-3 mb-3">
-                            <div class="deck">
-                                <div class="card" >
-                                    <div class="value">{this.state.activeCard != null ? this.mapToCardText(this.state.activeCard.value) : ''}
-                                    </div>
-                                    <div className={this.state.activeCard != null ? this.state.activeCard.class : ''}>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-3 mb-3" >
-                            <div class="deck" style={{ 'float': 'right' }}>
-                                <div class="card" >
-                                    <div class="value">{this.state.activeCardPlayer02 != null ? this.mapToCardText(this.state.activeCardPlayer02.value) : ''}
-                                    </div>
-                                    <div className={this.state.activeCardPlayer02 != null ? this.state.activeCardPlayer02.class : ''}>
+
+                    </div>
+                    <div id="PlayArea" className="play-area" style={{ display: this.state.showPlayArea ? 'block' : 'none' }}>
+
+                        <div className="alert alert-success" style={{ display: this.state.message !== '' ? 'block' : 'none' }} role="alert">
+                            {this.state.message}
+                        </div>
+                        <div className='row'>
+                            <button type="button" class=" mb-3 btn btn-success">
+                                Players online: <span class="badge badge-light"> {this.state.players.length}</span>
+                            </button>
+                            <div class="col-3" style={{ 'float': 'right', display: this.state.rangOfGame !== '' ? 'block' : 'none' }}>
+                                <div class={"cardSmall " + (this.state.rangOfGame) + "Small"}></div>
+                            </div>
+                            <div class="col-3" style={{ 'float': 'right', display: this.state.rangOfGame === '' ? 'block' : 'none' }}>
+                                Rang is not selected yet!
+                        </div>
+                            <div class="col-3" style={{ 'float': 'right', display: this.state.gameMessage !== "" ? 'block' : 'none' }}>
+                                {this.state.gameMessage}
+                            </div>
+                        </div>
+
+
+                        <br />
+
+                        <div class="row">
+                            <div className={"card text-white mb-3 col-3 " + (!this.state.hostTurn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left' }}>
+                                <div class="card-header">Host</div>
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {this.state.gameId}
+                                        {this.state.players.length >= 1 ? <Results /> : null}
+                                    </h5>
+                                    <p class="card-text">
+                                        {this.state.hostText}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-3 mb-3">
+                                <div class="deck">
+                                    <div class="card" >
+                                        <div class="value">{this.state.activeCard != null ? this.mapToCardText(this.state.activeCard.value) : ''}
+                                        </div>
+                                        <div className={this.state.activeCard != null ? this.state.activeCard.class : ''}>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player02Turn ? 'bg-success' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
-                            <div class="card-header">{this.state.players.length >= 2 ? this.state.players[1].playerName : ""}</div>
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    {this.state.players.length >= 2 ? <Results /> : null}
-                                </h5>
-                                <p class="card-text">player joining ...</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-
-                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player04Turn ? 'bg-success' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
-                            <div class="card-header">{this.state.players.length >= 4 ? this.state.players[3].playerName : ""}</div>
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    {this.state.players.length >= 4 ? <Results /> : null}
-                                </h5>
-                                <p class="card-text">player joining...</p>
-                            </div>
-                        </div>
-                        <div class="col-3 mb-3" >
-                            <div class="deck" style={{ 'float': 'left' }}>
-                                <div class="card" >
-                                    <div class="value">{this.state.activeCardPlayer04 != null ? this.mapToCardText(this.state.activeCardPlayer04.value) : ''}
-                                    </div>
-                                    <div className={this.state.activeCardPlayer04 != null ? this.state.activeCardPlayer04.class : ''}>
+                            <div class="col-3 mb-3" >
+                                <div class="deck" style={{ 'float': 'right' }}>
+                                    <div class="card" >
+                                        <div class="value">{this.state.activeCardPlayer02 != null ? this.mapToCardText(this.state.activeCardPlayer02.value) : ''}
+                                        </div>
+                                        <div className={this.state.activeCardPlayer02 != null ? this.state.activeCardPlayer02.class : ''}>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-3 mb-3">
-                            <div class="deck" style={{ 'float': 'right' }}>
-                                <div class="card" >
-                                    <div class="value">{this.state.activeCardPlayer03 != null ? this.mapToCardText(this.state.activeCardPlayer03.value) : ''}
-                                    </div>
-                                    <div className={this.state.activeCardPlayer03 != null ? this.state.activeCardPlayer03.class : ''}>
-                                    </div>
+                            <div className={"card text-white  mb-3 col-3 " + (!this.state.player02Turn ? 'bg-success' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
+                                <div class="card-header">{this.state.players.length >= 2 ? this.state.players[1].playerName : ""}</div>
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {this.state.players.length >= 2 ? <Results /> : null}
+                                    </h5>
+                                    <p class="card-text">player joining ...</p>
                                 </div>
                             </div>
                         </div>
-                        <div className={"card text-white  mb-3 col-3 " + (!this.state.player03Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left' }}>
-                            <div class="card-header">{this.state.players.length >= 3 ? this.state.players[2].playerName : ""}</div>
-                            <div class="card-body">
-                                <h5 class="card-title">
-                                    {this.state.players.length >= 3 ? <Results /> : null}
-                                </h5>
-                                <p class="card-text">cards coming...</p>
+
+                        <div class="row">
+
+                            <div className={"card text-white  mb-3 col-3 " + (!this.state.player04Turn ? 'bg-success' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'right' }}>
+                                <div class="card-header">{this.state.players.length >= 4 ? this.state.players[3].playerName : ""}</div>
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {this.state.players.length >= 4 ? <Results /> : null}
+                                    </h5>
+                                    <p class="card-text">player joining...</p>
+                                </div>
+                            </div>
+                            <div class="col-3 mb-3" >
+                                <div class="deck" style={{ 'float': 'left' }}>
+                                    <div class="card" >
+                                        <div class="value">{this.state.activeCardPlayer04 != null ? this.mapToCardText(this.state.activeCardPlayer04.value) : ''}
+                                        </div>
+                                        <div className={this.state.activeCardPlayer04 != null ? this.state.activeCardPlayer04.class : ''}>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-3 mb-3">
+                                <div class="deck" style={{ 'float': 'right' }}>
+                                    <div class="card" >
+                                        <div class="value">{this.state.activeCardPlayer03 != null ? this.mapToCardText(this.state.activeCardPlayer03.value) : ''}
+                                        </div>
+                                        <div className={this.state.activeCardPlayer03 != null ? this.state.activeCardPlayer03.class : ''}>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={"card text-white  mb-3 col-3 " + (!this.state.player03Turn ? 'bg-primary' : 'bg-danger')} style={{ 'max-width': '18rem', 'float': 'left' }}>
+                                <div class="card-header">{this.state.players.length >= 3 ? this.state.players[2].playerName : ""}</div>
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {this.state.players.length >= 3 ? <Results /> : null}
+                                    </h5>
+                                    <p class="card-text">cards coming...</p>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="row">
+                            <div className="deck">
+                                {cardsItems}
                             </div>
                         </div>
+                    </div >
+                    <Modal show={this.state.showModal}
+                        onHide={() => this.setState({ showModal: false })}>
+                        <Modal.Header closeButton>
+                            <Modal.Title>{this.state.modalTitle}</Modal.Title>
+                        </Modal.Header>
 
-                    </div>
+                        <Modal.Body>
+                            <p>{this.state.playerWonMessage}</p>
+                            <div className="deck">
+                                {rangSelectionCards}
+                            </div>
+                        </Modal.Body>
 
-                    <div className="deck">
-                        {cardsItems}
-                    </div>
+                        <Modal.Footer>
+                            <Button variant="secondary" onClick={this.showModalClose}>Close</Button>
+                        </Modal.Footer>
+                    </Modal>
                 </div >
-                <Modal show={this.state.showModal}
-                    onHide={() => this.setState({ showModal: false })}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>{this.state.modalTitle}</Modal.Title>
-                    </Modal.Header>
-
-                    <Modal.Body>
-                        <p>{this.state.playerWonMessage}</p>
-                        <div className="deck">
-                            {rangSelectionCards}
-                        </div>
-                    </Modal.Body>
-
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={this.showModalClose}>Close</Button>
-                    </Modal.Footer>
-                </Modal>
-            </div >
+                <Footer />
+            </div>
         );
     }
 

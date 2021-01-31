@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
-import { signin } from "../helpers/auth";
+import { signin, signInWithGoogle } from "../helpers/auth";
 
 export default class Login extends Component {
     constructor(props) {
@@ -33,6 +33,14 @@ export default class Login extends Component {
         }
     }
 
+    async googleSignIn() {
+        try {
+          await signInWithGoogle();
+        } catch (error) {
+          this.setState({ error: error.message });
+        }
+      }
+      
     render() {
         return (
             <div className="container">
@@ -44,7 +52,7 @@ export default class Login extends Component {
                     <h1>
                         Login to
             <Link className="title ml-2" to="/">
-                            Chatty
+                            Rang card game
             </Link>
                     </h1>
                     <p className="lead">
@@ -80,9 +88,7 @@ export default class Login extends Component {
                     <button className="btn btn-danger mr-2" type="button" onClick={this.googleSignIn}>
                         Sign in with Google
           </button>
-                    <button className="btn btn-secondary" type="button" onClick={this.githubSignIn}>
-                        Sign in with GitHub
-          </button>
+                   
                     <hr />
                     <p>
                         Don't have an account? <Link to="/signup">Sign up</Link>

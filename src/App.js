@@ -5,14 +5,12 @@ import {
   Switch,
   Redirect,
 } from "react-router-dom";
-import logo from './logo.svg';
 import './App.css';
 import Home from './pages/home';
 import Login from './pages/login';
 import Signup from './pages/signup';
 import Playarea from './pages/playarea';
 import { auth } from './services/firebase';
-import Lobby from './pages/lobby';
 function PrivateRoute({ component: Component, authenticated, ...rest }) {
   return (
     <Route
@@ -76,11 +74,6 @@ render() {
                       path="/playarea"
                       authenticated={this.state.authenticated}
                       component={Playarea}
-                  />
-                  <PrivateRoute
-                      path="/lobby"
-                      authenticated={this.state.authenticated}
-                      component={Lobby}
                   />
                   <PublicRoute
                       path="/signup"
